@@ -6,6 +6,7 @@ import (
 	"github.com/caarlos0/env/v6"
 	"github.com/ggsomnoev/sumup-notification-task/internal/lifecycle"
 	"github.com/ggsomnoev/sumup-notification-task/internal/webapi"
+	"github.com/ggsomnoev/sumup-notification-task/internal/notificationproducer"
 )
 
 type Config struct {
@@ -22,6 +23,7 @@ func main() {
 	appCtx, procSpawnFn := appController.Start()
 
 	srv := webapi.NewServer(appCtx)
+	notificationproducer.Process(appCtx, srv)
 
 	webapi.Start(procSpawnFn, srv, cfg.APIPort)
 
