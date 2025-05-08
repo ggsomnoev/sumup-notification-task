@@ -5,12 +5,15 @@ import (
 
 	"github.com/caarlos0/env/v6"
 	"github.com/ggsomnoev/sumup-notification-task/internal/lifecycle"
-	"github.com/ggsomnoev/sumup-notification-task/internal/webapi"
 	"github.com/ggsomnoev/sumup-notification-task/internal/notificationproducer"
+	"github.com/ggsomnoev/sumup-notification-task/internal/webapi"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type Config struct {
-	APIPort string `env:"API_PORT" envDefault:"8080"`
+	APIPort         string `env:"API_PORT" envDefault:"8080"`
+	RabbitMQConnURL string `env:"RABBITMQ_CONN_URL" envDefault:"amqp://guest:guest@rabbitmq:5672/"`
+	RabbitMQQueue   string `env:"RABBITMQ_QUEUE" envDefault:"notifications_queue"`
 }
 
 func main() {
@@ -23,7 +26,14 @@ func main() {
 	appCtx, procSpawnFn := appController.Start()
 
 	srv := webapi.NewServer(appCtx)
-	notificationproducer.Process(appCtx, srv)
+
+	// TODO: Change to DialTLS.
+	rabbitMQConn, err := amqp.Dial(cfg.RabbitMQConnURL)
+	if err != nil {
+		panic(fmt.Errorf("failed to connect to RabbitMQ, exiting - %w", err))
+	}
+
+	notificationproducer.Process(appCtx, srv, rabbitMQConn, cfg.RabbitMQQueue)
 
 	webapi.Start(procSpawnFn, srv, cfg.APIPort)
 

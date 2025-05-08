@@ -2,6 +2,8 @@ package process
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/ggsomnoev/sumup-notification-task/internal/logger"
@@ -14,7 +16,7 @@ const successfullyAddedNotification = "successfully added notification"
 
 //counterfeiter:generate . Publisher
 type Publisher interface {
-	Publish(context.Context, model.Notification) error
+	Publish(context.Context, []byte) error
 }
 
 func RegisterHandlers(ctx context.Context, srv *echo.Echo, publisher Publisher) {
@@ -38,7 +40,14 @@ func handleNotification(ctx context.Context, publisher Publisher) echo.HandlerFu
 			return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
 		}
 
-		if err := publisher.Publish(ctx, notification); err != nil {
+		messageBytes, err := json.Marshal(notification)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{
+				"error": fmt.Sprintf("failed to marshal notification: %v", err),
+			})
+		}
+
+		if err := publisher.Publish(ctx, messageBytes); err != nil {
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		}
 
