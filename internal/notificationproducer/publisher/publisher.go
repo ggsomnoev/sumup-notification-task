@@ -58,8 +58,17 @@ func (r *RabbitMQPublisher) Publish(ctx context.Context, message []byte) error {
 }
 
 func (r *RabbitMQPublisher) Close() error {
+	var closeErr error
+
+	defer func() {
+		if err := r.conn.Close(); err != nil && closeErr == nil {
+			closeErr = fmt.Errorf("failed to close connection: %w", err)
+		}
+	}()
+
 	if err := r.channel.Close(); err != nil {
-		return fmt.Errorf("failed to close channel: %w", err)
+		closeErr = fmt.Errorf("failed to close channel: %w", err)
 	}
-	return nil
+
+	return closeErr
 }

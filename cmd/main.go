@@ -33,7 +33,7 @@ func main() {
 		panic(fmt.Errorf("failed to connect to RabbitMQ, exiting - %w", err))
 	}
 
-	notificationproducer.Process(appCtx, srv, rabbitMQConn, cfg.RabbitMQQueue)
+	notificationproducer.Process(procSpawnFn, appCtx, srv, rabbitMQConn, cfg.RabbitMQQueue)
 
 	webapi.Start(procSpawnFn, srv, cfg.APIPort)
 
