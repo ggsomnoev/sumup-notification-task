@@ -6,6 +6,7 @@ import (
 	"github.com/caarlos0/env/v6"
 	"github.com/ggsomnoev/sumup-notification-task/internal/lifecycle"
 	"github.com/ggsomnoev/sumup-notification-task/internal/notificationproducer"
+	"github.com/ggsomnoev/sumup-notification-task/internal/rabbitmq"
 	"github.com/ggsomnoev/sumup-notification-task/internal/webapi"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -28,12 +29,17 @@ func main() {
 	srv := webapi.NewServer(appCtx)
 
 	// TODO: Change to DialTLS.
-	rabbitMQConn, err := amqp.Dial(cfg.RabbitMQConnURL)
+	rmqConn, err := amqp.Dial(cfg.RabbitMQConnURL)
 	if err != nil {
-		panic(fmt.Errorf("failed to connect to RabbitMQ, exiting - %w", err))
+		panic(fmt.Errorf("failed to dial, exiting - %w", err))
 	}
 
-	notificationproducer.Process(procSpawnFn, appCtx, srv, rabbitMQConn, cfg.RabbitMQQueue)
+	client, err := rabbitmq.NewClient(rmqConn, cfg.RabbitMQQueue)
+	if err != nil {
+		panic(fmt.Errorf("failed to dial, exiting - %w", err))
+	}
+
+	notificationproducer.Process(procSpawnFn, appCtx, srv, client)
 
 	webapi.Start(procSpawnFn, srv, cfg.APIPort)
 

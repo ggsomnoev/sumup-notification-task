@@ -17,6 +17,7 @@ const successfullyAddedNotification = "successfully added notification"
 //counterfeiter:generate . Publisher
 type Publisher interface {
 	Publish(context.Context, []byte) error
+	Close() error
 }
 
 func RegisterHandlers(ctx context.Context, srv *echo.Echo, publisher Publisher) {

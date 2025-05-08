@@ -1,4 +1,4 @@
-package publisher
+package rabbitmq
 
 import (
 	"context"
@@ -7,13 +7,13 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-type RabbitMQPublisher struct {
+type Client struct {
 	conn    *amqp.Connection
 	channel *amqp.Channel
 	queue   string
 }
 
-func NewRabbitMQPublisher(conn *amqp.Connection, queueName string) (*RabbitMQPublisher, error) {
+func NewClient(conn *amqp.Connection, queueName string) (*Client, error) {
 	ch, err := conn.Channel()
 	if err != nil {
 		return nil, fmt.Errorf("failed to open channel: %w", err)
@@ -31,14 +31,14 @@ func NewRabbitMQPublisher(conn *amqp.Connection, queueName string) (*RabbitMQPub
 		return nil, fmt.Errorf("failed to declare queue: %w", err)
 	}
 
-	return &RabbitMQPublisher{
+	return &Client{
 		conn:    conn,
 		channel: ch,
 		queue:   queueName,
 	}, nil
 }
 
-func (r *RabbitMQPublisher) Publish(ctx context.Context, message []byte) error {
+func (r *Client) Publish(ctx context.Context, message []byte) error {
 	err := r.channel.PublishWithContext(
 		ctx,
 		"",      // exchange
@@ -57,7 +57,7 @@ func (r *RabbitMQPublisher) Publish(ctx context.Context, message []byte) error {
 	return nil
 }
 
-func (r *RabbitMQPublisher) Close() error {
+func (r *Client) Close() error {
 	var closeErr error
 
 	defer func() {
