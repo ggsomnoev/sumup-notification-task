@@ -5,7 +5,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/ggsomnoev/sumup-notification-task/internal/notificationproducer/process"
+	"github.com/ggsomnoev/sumup-notification-task/internal/notification/model"
+	"github.com/ggsomnoev/sumup-notification-task/internal/notification/producer/process"
 )
 
 type FakePublisher struct {
@@ -19,11 +20,11 @@ type FakePublisher struct {
 	closeReturnsOnCall map[int]struct {
 		result1 error
 	}
-	PublishStub        func(context.Context, []byte) error
+	PublishStub        func(context.Context, model.Message) error
 	publishMutex       sync.RWMutex
 	publishArgsForCall []struct {
 		arg1 context.Context
-		arg2 []byte
+		arg2 model.Message
 	}
 	publishReturns struct {
 		result1 error
@@ -88,21 +89,16 @@ func (fake *FakePublisher) CloseReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakePublisher) Publish(arg1 context.Context, arg2 []byte) error {
-	var arg2Copy []byte
-	if arg2 != nil {
-		arg2Copy = make([]byte, len(arg2))
-		copy(arg2Copy, arg2)
-	}
+func (fake *FakePublisher) Publish(arg1 context.Context, arg2 model.Message) error {
 	fake.publishMutex.Lock()
 	ret, specificReturn := fake.publishReturnsOnCall[len(fake.publishArgsForCall)]
 	fake.publishArgsForCall = append(fake.publishArgsForCall, struct {
 		arg1 context.Context
-		arg2 []byte
-	}{arg1, arg2Copy})
+		arg2 model.Message
+	}{arg1, arg2})
 	stub := fake.PublishStub
 	fakeReturns := fake.publishReturns
-	fake.recordInvocation("Publish", []interface{}{arg1, arg2Copy})
+	fake.recordInvocation("Publish", []interface{}{arg1, arg2})
 	fake.publishMutex.Unlock()
 	if stub != nil {
 		return stub(arg1, arg2)
@@ -119,13 +115,13 @@ func (fake *FakePublisher) PublishCallCount() int {
 	return len(fake.publishArgsForCall)
 }
 
-func (fake *FakePublisher) PublishCalls(stub func(context.Context, []byte) error) {
+func (fake *FakePublisher) PublishCalls(stub func(context.Context, model.Message) error) {
 	fake.publishMutex.Lock()
 	defer fake.publishMutex.Unlock()
 	fake.PublishStub = stub
 }
 
-func (fake *FakePublisher) PublishArgsForCall(i int) (context.Context, []byte) {
+func (fake *FakePublisher) PublishArgsForCall(i int) (context.Context, model.Message) {
 	fake.publishMutex.RLock()
 	defer fake.publishMutex.RUnlock()
 	argsForCall := fake.publishArgsForCall[i]

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"regexp"
 
-	"github.com/ggsomnoev/sumup-notification-task/internal/model"
+	"github.com/ggsomnoev/sumup-notification-task/internal/notification/model"
 	"github.com/go-playground/validator/v10"
 )
 

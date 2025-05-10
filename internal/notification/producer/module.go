@@ -1,4 +1,4 @@
-package notificationproducer
+package producer
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/ggsomnoev/sumup-notification-task/internal/lifecycle"
 	"github.com/ggsomnoev/sumup-notification-task/internal/logger"
-	"github.com/ggsomnoev/sumup-notification-task/internal/notificationproducer/process"
+	"github.com/ggsomnoev/sumup-notification-task/internal/notification/producer/process"
 	"github.com/labstack/echo/v4"
 )
 

@@ -23,4 +23,34 @@ services:
       test: ["CMD", "rabbitmq-diagnostics", "check_running"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 5  
+    
+  migratedb:
+    image: migrate/migrate:v4.17.1
+    container_name: migratedb
+    volumes:
+      - ./migrations:/migrations
+    entrypoint: [ "migrate", "-path", "/migrations", "-database", "pgx5://notfuser:notfpass@notificationdb:5432/notificationdb", "up" ]
+    depends_on:
+      notificationdb:
+        condition: service_healthy
+  
+  notificationdb:
+    image: postgres:15.7
+    container_name: notificationdb
+    environment:
+      POSTGRES_USER: notfuser
+      POSTGRES_PASSWORD: notfpass
+      POSTGRES_DB: notificationdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U notfuser -d notificationdb"]
+      interval: 1s
+      timeout: 1s
+      retries: 30
+
+volumes:
+  pgdata:

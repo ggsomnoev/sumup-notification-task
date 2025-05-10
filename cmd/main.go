@@ -2,31 +2,55 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/caarlos0/env/v6"
 	"github.com/ggsomnoev/sumup-notification-task/internal/lifecycle"
-	"github.com/ggsomnoev/sumup-notification-task/internal/notificationproducer"
-	"github.com/ggsomnoev/sumup-notification-task/internal/rabbitmq"
+	"github.com/ggsomnoev/sumup-notification-task/internal/logger"
+	"github.com/ggsomnoev/sumup-notification-task/internal/notification/consumer"
+	"github.com/ggsomnoev/sumup-notification-task/internal/notification/messaging/rabbitmq"
+	"github.com/ggsomnoev/sumup-notification-task/internal/notification/producer"
+	"github.com/ggsomnoev/sumup-notification-task/internal/pg"
 	"github.com/ggsomnoev/sumup-notification-task/internal/webapi"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type Config struct {
+	DBConnectionURL   string        `env:"DB_CONNECTION_URL" envDefault:"postgres://notfuser:notfpass@notificationdb:5432/notificationdb"`
+	DBMaxConnLifetime time.Duration `env:"DB_MAX_CONN_LIFETIME" envDefault:"30m"`
+	DBMaxConnIdleTime time.Duration `env:"DB_MAX_CONN_IDLE_TIME" envDefault:"5m"`
+	DBHealthCheck     time.Duration `env:"DB_HEALTH_CHECK_PERIOD" envDefault:"1m"`
+	DBMinConns        int32         `env:"DB_MIN_CONNS" envDefault:"1"`
+	DBMaxConns        int32         `env:"DB_MAX_CONNS" envDefault:"2"`
+
 	APIPort         string `env:"API_PORT" envDefault:"8080"`
 	RabbitMQConnURL string `env:"RABBITMQ_CONN_URL" envDefault:"amqp://guest:guest@rabbitmq:5672/"`
 	RabbitMQQueue   string `env:"RABBITMQ_QUEUE" envDefault:"notifications_queue"`
 }
 
 func main() {
+	appController := lifecycle.NewController()
+	appCtx, procSpawnFn := appController.Start()
+
 	cfg := Config{}
 	if err := env.Parse(&cfg); err != nil {
 		panic(fmt.Errorf("failed reading configuration, exiting - %w", err))
 	}
 
-	appController := lifecycle.NewController()
-	appCtx, procSpawnFn := appController.Start()
+	dbCfg := pg.PoolConfig{
+		MinConns:          cfg.DBMinConns,
+		MaxConns:          cfg.DBMaxConns,
+		MaxConnLifetime:   cfg.DBMaxConnLifetime,
+		MaxConnIdleTime:   cfg.DBMaxConnIdleTime,
+		HealthCheckPeriod: cfg.DBHealthCheck,
+	}
 
-	srv := webapi.NewServer(appCtx)
+	pool, err := pg.InitPool(appCtx, cfg.DBConnectionURL, dbCfg)
+	if err != nil {
+		panic(fmt.Errorf("failed initializing db connection pool, exiting - %w", err))
+	}
+
+	defer pool.Close()
 
 	// TODO: Change to DialTLS.
 	rmqConn, err := amqp.Dial(cfg.RabbitMQConnURL)
@@ -34,12 +58,21 @@ func main() {
 		panic(fmt.Errorf("failed to dial, exiting - %w", err))
 	}
 
+	defer func() {
+		if err := rmqConn.Close(); err != nil {
+			logger.GetLogger().Errorf("failed to close RabbitMQ connection: %v", err)
+		}
+	}()
+
 	client, err := rabbitmq.NewClient(rmqConn, cfg.RabbitMQQueue)
 	if err != nil {
 		panic(fmt.Errorf("failed to dial, exiting - %w", err))
 	}
 
-	notificationproducer.Process(procSpawnFn, appCtx, srv, client)
+	srv := webapi.NewServer(appCtx)
+	producer.Process(procSpawnFn, appCtx, srv, client)
+
+	consumer.Process(procSpawnFn, appCtx, pool, client)
 
 	webapi.Start(procSpawnFn, srv, cfg.APIPort)
 

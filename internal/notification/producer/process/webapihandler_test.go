@@ -8,9 +8,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/ggsomnoev/sumup-notification-task/internal/model"
-	"github.com/ggsomnoev/sumup-notification-task/internal/notificationproducer/process"
-	"github.com/ggsomnoev/sumup-notification-task/internal/notificationproducer/process/processfakes"
+	"github.com/ggsomnoev/sumup-notification-task/internal/notification/model"
+	"github.com/ggsomnoev/sumup-notification-task/internal/notification/producer/process"
+	"github.com/ggsomnoev/sumup-notification-task/internal/notification/producer/process/processfakes"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -61,8 +62,9 @@ var _ = Describe("Notification Handler", func() {
 		It("succeeds", func() {
 			Expect(recorder.Code).To(Equal(http.StatusOK))
 			Expect(publisher.PublishCallCount()).To(Equal(1))
-			_, actualNotificaton := publisher.PublishArgsForCall(0)
-			Expect(actualNotificaton).To(Equal(notification))
+			_, actualMessage := publisher.PublishArgsForCall(0)
+			Expect(actualMessage.UUID).NotTo(Equal(uuid.Nil))
+			Expect(actualMessage.Notification).To(Equal(notification))
 		})
 
 		When("invalid JSON is posted", func() {

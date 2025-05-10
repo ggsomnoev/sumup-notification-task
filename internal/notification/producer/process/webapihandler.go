@@ -2,13 +2,12 @@ package process
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/ggsomnoev/sumup-notification-task/internal/logger"
-	"github.com/ggsomnoev/sumup-notification-task/internal/model"
-	"github.com/ggsomnoev/sumup-notification-task/internal/validator"
+	"github.com/ggsomnoev/sumup-notification-task/internal/notification/model"
+	"github.com/ggsomnoev/sumup-notification-task/internal/notification/producer/validator"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
 
@@ -16,7 +15,7 @@ const successfullyAddedNotification = "successfully added notification"
 
 //counterfeiter:generate . Publisher
 type Publisher interface {
-	Publish(context.Context, []byte) error
+	Publish(context.Context, model.Message) error
 	Close() error
 }
 
@@ -41,14 +40,12 @@ func handleNotification(ctx context.Context, publisher Publisher) echo.HandlerFu
 			return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
 		}
 
-		messageBytes, err := json.Marshal(notification)
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, map[string]string{
-				"error": fmt.Sprintf("failed to marshal notification: %v", err),
-			})
+		message := model.Message{
+			UUID:         uuid.New(),
+			Notification: notification,
 		}
 
-		if err := publisher.Publish(ctx, messageBytes); err != nil {
+		if err := publisher.Publish(ctx, message); err != nil {
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		}
 
