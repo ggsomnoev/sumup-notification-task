@@ -25,7 +25,11 @@ type Service struct {
 	notifiers map[string]Notifier
 }
 
-func NewService(store Store, notifiers map[string]Notifier) *Service {
+// Interface for the twilio
+func NewService(
+	store Store,
+	notifiers map[string]Notifier,
+) *Service {
 	return &Service{
 		store:     store,
 		notifiers: notifiers,

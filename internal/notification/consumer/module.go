@@ -11,6 +11,7 @@ import (
 	"github.com/ggsomnoev/sumup-notification-task/internal/notification/consumer/store"
 	"github.com/ggsomnoev/sumup-notification-task/internal/notification/model"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/twilio/twilio-go"
 )
 
 type Consumer interface {
@@ -23,13 +24,14 @@ func Process(
 	ctx context.Context,
 	pool *pgxpool.Pool,
 	consumer Consumer,
+	twilioClient *twilio.RestClient,
 ) {
 	procSpawnFn(func(ctx context.Context) error {
 		store := store.NewStore(pool)
 
 		senders := map[string]service.Notifier{
 			"email": notifier.NewEmailNotifier(),
-			"sms":   notifier.NewSmsNotifier(),
+			"sms":   notifier.NewTextBeltSmsNotifier(),
 			"slack": notifier.NewSlackNotifier(),
 		}
 

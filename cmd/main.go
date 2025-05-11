@@ -13,6 +13,7 @@ import (
 	"github.com/ggsomnoev/sumup-notification-task/internal/pg"
 	"github.com/ggsomnoev/sumup-notification-task/internal/webapi"
 	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/twilio/twilio-go"
 )
 
 type Config struct {
@@ -26,6 +27,9 @@ type Config struct {
 	APIPort         string `env:"API_PORT" envDefault:"8080"`
 	RabbitMQConnURL string `env:"RABBITMQ_CONN_URL" envDefault:"amqp://guest:guest@rabbitmq:5672/"`
 	RabbitMQQueue   string `env:"RABBITMQ_QUEUE" envDefault:"notifications_queue"`
+
+	TwilioAccountSSID string `env:"TWILIO_ACC_SSID"`
+	TwilioAuthToken   string `env:"TWILIO_AUTH_TOKEN"`
 }
 
 func main() {
@@ -64,15 +68,20 @@ func main() {
 		}
 	}()
 
-	client, err := rabbitmq.NewClient(rmqConn, cfg.RabbitMQQueue)
+	rmqClient, err := rabbitmq.NewClient(rmqConn, cfg.RabbitMQQueue)
 	if err != nil {
 		panic(fmt.Errorf("failed to dial, exiting - %w", err))
 	}
 
 	srv := webapi.NewServer(appCtx)
-	producer.Process(procSpawnFn, appCtx, srv, client)
+	producer.Process(procSpawnFn, appCtx, srv, rmqClient)
 
-	consumer.Process(procSpawnFn, appCtx, pool, client)
+	twilioClient := twilio.NewRestClientWithParams(twilio.ClientParams{
+		Username: cfg.TwilioAccountSSID,
+		Password: cfg.TwilioAuthToken,
+	})
+
+	consumer.Process(procSpawnFn, appCtx, pool, rmqClient, twilioClient)
 
 	webapi.Start(procSpawnFn, srv, cfg.APIPort)
 

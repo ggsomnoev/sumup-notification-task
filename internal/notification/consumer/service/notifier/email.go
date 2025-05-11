@@ -5,6 +5,8 @@ import (
 	"github.com/ggsomnoev/sumup-notification-task/internal/notification/model"
 )
 
+
+
 type EmailNotifier struct{}
 
 func NewEmailNotifier() *EmailNotifier {

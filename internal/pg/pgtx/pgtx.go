@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/ggsomnoev/sumup-notification-task/internal/logger"
 	"github.com/ggsomnoev/sumup-notification-task/internal/pg/txctx"
 
 	"github.com/jackc/pgx/v5"
@@ -20,7 +21,12 @@ func Atomically(
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)
 	}
-	defer tx.Rollback(ctx)
+
+	defer func() {
+		if err := tx.Rollback(ctx); err != nil {
+			logger.GetLogger().Errorf("could not rollback transaction: %v", err)
+		}
+	}()
 
 	ctxWithTx := txctx.WithTx(ctx, tx)
 
