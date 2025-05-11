@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
+//counterfeiter:generate . Store
 type Store interface {
 	AddMessage(context.Context, model.Message) error
 	MarkCompleted(context.Context, uuid.UUID) error
@@ -16,6 +17,7 @@ type Store interface {
 	RunInAtomically(context.Context, func(context.Context) error) error
 }
 
+//counterfeiter:generate . Notifier
 type Notifier interface {
 	Send(n model.Notification) error
 }
@@ -25,7 +27,6 @@ type Service struct {
 	notifiers map[string]Notifier
 }
 
-// Interface for the twilio
 func NewService(
 	store Store,
 	notifiers map[string]Notifier,

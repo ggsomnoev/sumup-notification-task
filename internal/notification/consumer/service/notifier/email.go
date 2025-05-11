@@ -1,19 +1,43 @@
 package notifier
 
 import (
-	"github.com/ggsomnoev/sumup-notification-task/internal/logger"
+	"errors"
+	"fmt"
+
 	"github.com/ggsomnoev/sumup-notification-task/internal/notification/model"
+	"github.com/sendgrid/rest"
+	"github.com/sendgrid/sendgrid-go/helpers/mail"
 )
 
+var ErrFailedToSendEmail = errors.New("email not sent successfully")
 
+//counterfeiter:generate . SendGridClient
+type SendGridClient interface {
+	Send(*mail.SGMailV3) (*rest.Response, error)
+}
 
-type EmailNotifier struct{}
+type EmailNotifier struct {
+	client SendGridClient
+}
 
-func NewEmailNotifier() *EmailNotifier {
-	return &EmailNotifier{}
+func NewEmailNotifier(client SendGridClient) *EmailNotifier {
+	return &EmailNotifier{
+		client: client,
+	}
 }
 
 func (es *EmailNotifier) Send(n model.Notification) error {
-	logger.GetLogger().Infof("Trying to send email notification: %v", n)
+	from := mail.NewEmail("Notifier", n.From)
+	to := mail.NewEmail("Recipient", n.Recipient)
+	message := mail.NewSingleEmail(from, n.Subject, to, n.Message, n.Message)
+
+	response, err := es.client.Send(message)
+	if err != nil {
+		return fmt.Errorf("failed to send email via SendGrid: %w", err)
+	}
+
+	if response.StatusCode < 200 || response.StatusCode >= 300 {
+		return fmt.Errorf("%w, status code: %d, body: %s", ErrFailedToSendEmail, response.StatusCode, response.Body)
+	}
 	return nil
 }

@@ -13,7 +13,7 @@ type TwilioSmsNotifier struct {
 	twilioClient *twilio.RestClient
 }
 
-func NewTwilioSmsNotifier(
+func NewTwilioSMSNotifier(
 	twilioClient *twilio.RestClient,
 ) *TwilioSmsNotifier {
 	return &TwilioSmsNotifier{

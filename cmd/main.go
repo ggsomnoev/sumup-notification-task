@@ -13,8 +13,13 @@ import (
 	"github.com/ggsomnoev/sumup-notification-task/internal/pg"
 	"github.com/ggsomnoev/sumup-notification-task/internal/webapi"
 	amqp "github.com/rabbitmq/amqp091-go"
-	"github.com/twilio/twilio-go"
+	"github.com/sendgrid/sendgrid-go"
+
+	// "github.com/twilio/twilio-go"
+	"github.com/lateralusd/textbelt"
 )
+
+var texterTimeout = 2 * time.Second
 
 type Config struct {
 	DBConnectionURL   string        `env:"DB_CONNECTION_URL" envDefault:"postgres://notfuser:notfpass@notificationdb:5432/notificationdb"`
@@ -30,6 +35,7 @@ type Config struct {
 
 	TwilioAccountSSID string `env:"TWILIO_ACC_SSID"`
 	TwilioAuthToken   string `env:"TWILIO_AUTH_TOKEN"`
+	TwilioMailAPIKey  string `env:"TWILIO_MAIL_API_KEY"`
 }
 
 func main() {
@@ -76,12 +82,19 @@ func main() {
 	srv := webapi.NewServer(appCtx)
 	producer.Process(procSpawnFn, appCtx, srv, rmqClient)
 
-	twilioClient := twilio.NewRestClientWithParams(twilio.ClientParams{
-		Username: cfg.TwilioAccountSSID,
-		Password: cfg.TwilioAuthToken,
-	})
+	// twilioSMSClient := twilio.NewRestClientWithParams(twilio.ClientParams{
+	// 	Username: cfg.TwilioAccountSSID,
+	// 	Password: cfg.TwilioAuthToken,
+	// })
 
-	consumer.Process(procSpawnFn, appCtx, pool, rmqClient, twilioClient)
+	textBeltSMSClient := textbelt.New(
+		textbelt.WithKey("textbelt"),
+		textbelt.WithTimeout(texterTimeout),
+	)
+
+	twilioMailClient := sendgrid.NewSendClient(cfg.TwilioMailAPIKey)
+
+	consumer.Process(procSpawnFn, appCtx, pool, rmqClient, textBeltSMSClient, twilioMailClient)
 
 	webapi.Start(procSpawnFn, srv, cfg.APIPort)
 

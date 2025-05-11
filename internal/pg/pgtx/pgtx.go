@@ -23,8 +23,10 @@ func Atomically(
 	}
 
 	defer func() {
-		if err := tx.Rollback(ctx); err != nil {
-			logger.GetLogger().Errorf("could not rollback transaction: %v", err)
+		if err != nil {
+			if errRb := tx.Rollback(ctx); errRb != nil {
+				logger.GetLogger().Errorf("could not rollback transaction: %v", err)
+			}
 		}
 	}()
 
