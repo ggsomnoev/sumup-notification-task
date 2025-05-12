@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ggsomnoev/sumup-notification-task/internal/logger"
 	"github.com/ggsomnoev/sumup-notification-task/internal/notification/model"
 )
 
@@ -44,7 +45,12 @@ func (sn *SlackNotifier) Send(n model.Notification) error {
 	if err != nil {
 		return fmt.Errorf("failed to send Slack request: %w", err)
 	}
-	defer response.Body.Close()
+
+	defer func() {
+		if err := response.Body.Close(); err != nil {
+			logger.GetLogger().Errorf("could not close response body: %v", err)
+		}
+	}()
 
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
 		return fmt.Errorf("received non-2xx response from Slack: %s", response.Status)

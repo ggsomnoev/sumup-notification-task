@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"sync"
@@ -76,7 +77,10 @@ func (c *Client) connect() error {
 
 	ch, err := conn.Channel()
 	if err != nil {
-		conn.Close()
+		closeErr := conn.Close()
+		if closeErr != nil {
+			return fmt.Errorf("failed to open channel: %w", errors.Join(err, closeErr))
+		}
 		return fmt.Errorf("failed to open channel: %w", err)
 	}
 
@@ -87,13 +91,19 @@ func (c *Client) connect() error {
 		"x-dead-letter-routing-key": dlq,
 	})
 	if err != nil {
-		conn.Close()
+		closeErr := conn.Close()
+		if closeErr != nil {
+			return fmt.Errorf("failed to declare queue: %w", errors.Join(err, closeErr))
+		}
 		return fmt.Errorf("failed to declare queue: %w", err)
 	}
 
 	_, err = ch.QueueDeclare(dlq, true, false, false, false, nil)
 	if err != nil {
-		conn.Close()
+		closeErr := conn.Close()
+		if closeErr != nil {
+			return fmt.Errorf("failed to declare DLQ: %w", errors.Join(err, closeErr))
+		}
 		return fmt.Errorf("failed to declare DLQ: %w", err)
 	}
 
