@@ -6,7 +6,7 @@ import (
 
 	"github.com/ggsomnoev/sumup-notification-task/internal/lifecycle"
 	"github.com/ggsomnoev/sumup-notification-task/internal/logger"
-	"github.com/ggsomnoev/sumup-notification-task/internal/notification/producer/process"
+	"github.com/ggsomnoev/sumup-notification-task/internal/notification/producer/handler"
 	"github.com/labstack/echo/v4"
 )
 
@@ -14,10 +14,10 @@ func Process(
 	procSpawnFn lifecycle.ProcessSpawnFunc,
 	ctx context.Context,
 	srv *echo.Echo,
-	publisher process.Publisher,
+	publisher handler.Publisher,
 ) {
 	procSpawnFn(func(ctx context.Context) error {
-		process.RegisterHandlers(ctx, srv, publisher)
+		handler.RegisterHandlers(ctx, srv, publisher)
 
 		<-ctx.Done()
 		logger.GetLogger().Info("closing the RabbitMQ connection due to app exit")

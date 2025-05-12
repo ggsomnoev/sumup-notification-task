@@ -1,4 +1,4 @@
-package process_test
+package handler_test
 
 import (
 	"bytes"
@@ -9,8 +9,8 @@ import (
 	"net/http/httptest"
 
 	"github.com/ggsomnoev/sumup-notification-task/internal/notification/model"
-	"github.com/ggsomnoev/sumup-notification-task/internal/notification/producer/process"
-	"github.com/ggsomnoev/sumup-notification-task/internal/notification/producer/process/processfakes"
+	"github.com/ggsomnoev/sumup-notification-task/internal/notification/producer/handler"
+	"github.com/ggsomnoev/sumup-notification-task/internal/notification/producer/handler/handlerfakes"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	. "github.com/onsi/ginkgo/v2"
@@ -24,16 +24,16 @@ var _ = Describe("Notification Handler", func() {
 		e         *echo.Echo
 		ctx       context.Context
 		recorder  *httptest.ResponseRecorder
-		publisher *processfakes.FakePublisher
+		publisher *handlerfakes.FakePublisher
 	)
 
 	BeforeEach(func() {
 		e = echo.New()
 		ctx = context.Background()
 		recorder = httptest.NewRecorder()
-		publisher = &processfakes.FakePublisher{}
+		publisher = &handlerfakes.FakePublisher{}
 
-		process.RegisterHandlers(ctx, e, publisher)
+		handler.RegisterHandlers(ctx, e, publisher)
 	})
 
 	Describe("POST /notifications", func() {
