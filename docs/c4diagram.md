@@ -8,7 +8,7 @@ The Notification System App is designed to accept notification publishing reques
 @startuml
 person user
 
-rectangle NotificationSystem #line:darkblue {
+rectangle NotificationApp #line:darkblue {
     node WebAPI [
         WebAPI
         ---
@@ -33,7 +33,7 @@ rectangle NotificationSystem #line:darkblue {
     Consumer <--> DB : Writes/reads delivery state
 }
 
-rectangle ExternalSystems {
+rectangle ExternalServices {
     node EmailSvc [
         Email Service
         ---
