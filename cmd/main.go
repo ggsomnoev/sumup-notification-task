@@ -6,13 +6,11 @@ import (
 
 	"github.com/caarlos0/env/v6"
 	"github.com/ggsomnoev/sumup-notification-task/internal/lifecycle"
-	"github.com/ggsomnoev/sumup-notification-task/internal/logger"
 	"github.com/ggsomnoev/sumup-notification-task/internal/notification/consumer"
 	"github.com/ggsomnoev/sumup-notification-task/internal/notification/messaging/rabbitmq"
 	"github.com/ggsomnoev/sumup-notification-task/internal/notification/producer"
 	"github.com/ggsomnoev/sumup-notification-task/internal/pg"
 	"github.com/ggsomnoev/sumup-notification-task/internal/webapi"
-	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/sendgrid/sendgrid-go"
 
 	// "github.com/twilio/twilio-go"
@@ -22,6 +20,10 @@ import (
 var texterTimeout = 2 * time.Second
 
 type Config struct {
+	AppEnv string `env:"APP_ENV" envDefault:"local"`
+
+	APIPort string `env:"API_PORT" envDefault:"8080"`
+
 	DBConnectionURL   string        `env:"DB_CONNECTION_URL" envDefault:"postgres://notfuser:notfpass@notificationdb:5432/notificationdb"`
 	DBMaxConnLifetime time.Duration `env:"DB_MAX_CONN_LIFETIME" envDefault:"30m"`
 	DBMaxConnIdleTime time.Duration `env:"DB_MAX_CONN_IDLE_TIME" envDefault:"5m"`
@@ -29,9 +31,11 @@ type Config struct {
 	DBMinConns        int32         `env:"DB_MIN_CONNS" envDefault:"1"`
 	DBMaxConns        int32         `env:"DB_MAX_CONNS" envDefault:"2"`
 
-	APIPort         string `env:"API_PORT" envDefault:"8080"`
-	RabbitMQConnURL string `env:"RABBITMQ_CONN_URL" envDefault:"amqp://guest:guest@rabbitmq:5672/"`
-	RabbitMQQueue   string `env:"RABBITMQ_QUEUE" envDefault:"notifications_queue"`
+	RabbitMQConnURL  string `env:"RABBITMQ_CONN_URL" envDefault:"amqp://guest:guest@rabbitmq:5672/"`
+	RabbitMQQueue    string `env:"RABBITMQ_QUEUE" envDefault:"notifications_queue"`
+	RabbitMQCAFile   string `env:"RABBITMQ_CA_FILE" envDefault:"/etc/rabbitmq/ca-cert.pem"`
+	RabbitMQCertFile string `env:"RABBITMQ_CERT_FILE" envDefault:"/etc/rabbitmq/client-cert.pem"`
+	RabbitMQKeyFile  string `env:"RABBITMQ_KEY_FILE" envDefault:"/etc/rabbitmq/client-key.pem"`
 
 	TwilioAccountSSID string `env:"TWILIO_ACC_SSID"`
 	TwilioAuthToken   string `env:"TWILIO_AUTH_TOKEN"`
@@ -66,21 +70,17 @@ func main() {
 
 	defer pool.Close()
 
-	// TODO: Change to DialTLS.
-	rmqConn, err := amqp.Dial(cfg.RabbitMQConnURL)
-	if err != nil {
-		panic(fmt.Errorf("failed to dial, exiting - %w", err))
-	}
-
-	defer func() {
-		if err := rmqConn.Close(); err != nil {
-			logger.GetLogger().Errorf("failed to close RabbitMQ connection: %v", err)
+	var tlsConfig *rabbitmq.TLSConfig
+	if cfg.AppEnv != "local" {
+		tlsConfig = &rabbitmq.TLSConfig{
+			CAFile:   cfg.RabbitMQCAFile,
+			CertFile: cfg.RabbitMQCertFile,
+			KeyFile:  cfg.RabbitMQKeyFile,
 		}
-	}()
-
-	rmqClient, err := rabbitmq.NewClient(rmqConn, cfg.RabbitMQQueue)
+	}
+	rmqClient, err := rabbitmq.NewClient(cfg.RabbitMQConnURL, cfg.RabbitMQQueue, tlsConfig)
 	if err != nil {
-		panic(fmt.Errorf("failed to dial, exiting - %w", err))
+		panic(fmt.Errorf("failed to initially connect to Rabbitmq, exiting - %w", err))
 	}
 
 	srv := webapi.NewServer(appCtx)
