@@ -5,43 +5,43 @@ import (
 	"regexp"
 
 	"github.com/ggsomnoev/sumup-notification-task/internal/notification/model"
-	"github.com/go-playground/validator/v10"
 )
 
 const (
 	phoneRegEx = `^\+\d{8,15}$`
-	slackRegEx = `^[@#][a-zA-Z0-9._-]+$`
 	emailRegEx = `^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`
 )
 
-var validate *validator.Validate
-
-func init() {
-	validate = validator.New()
-}
+var (
+	ErrInvalidEmailFormat    = errors.New("invalid email format")
+	ErrInvalidPhoneNumFormat = errors.New("invalid phone number format")
+	ErrMissingFields         = errors.New("missing required fields")
+	ErrUnsupportedChannel    = errors.New("unsupported notification channel")
+)
 
 func ValidateNotification(n model.Notification) error {
-	if err := validate.Struct(n); err != nil {
-		return err
-	}
-
 	switch n.Channel {
-	case "email":
+	case model.ChannelEmail:
+		if n.Subject == "" || n.Message == "" {
+			return ErrMissingFields
+		}
 		if !validateField(n.Recipient, emailRegEx) {
-			return errors.New("invalid email format")
+			return ErrInvalidEmailFormat
 		}
-	case "sms":
+	case model.ChannelSMS:
+		if n.Message == "" {
+			return ErrMissingFields
+		}
 		if !validateField(n.Recipient, phoneRegEx) {
-			return errors.New("invalid phone number")
+			return ErrInvalidPhoneNumFormat
 		}
-	case "slack":
-		if !validateField(n.Recipient, slackRegEx) {
-			return errors.New("invalid slack recipient")
+	case model.ChannelSlack:
+		if n.Subject == "" || n.Message == "" {
+			return ErrMissingFields
 		}
 	default:
-		return errors.New("unsupported channel")
+		return ErrUnsupportedChannel
 	}
-
 	return nil
 }
 

@@ -23,16 +23,17 @@ var _ = Describe("EmailNotifier", func() {
 		testMessage   model.Notification
 		mockResponse  *rest.Response
 		errAction     error
+		sender        string
 	)
 
 	BeforeEach(func() {
+		sender = "from@example.com"
 		fakeClient = &notifierfakes.FakeSendGridClient{}
-		emailNotifier = notifier.NewEmailNotifier(fakeClient)
+		emailNotifier = notifier.NewEmailNotifier(fakeClient, sender)
 
 		testMessage = model.Notification{
 			Channel:   "email",
 			Recipient: "to@example.com",
-			From:      "from@example.com",
 			Subject:   "Test Subject",
 			Message:   "Hello there ;)!",
 		}
@@ -75,7 +76,7 @@ var _ = Describe("EmailNotifier", func() {
 				Body:       "Bad Request",
 			}, nil)
 		})
-		
+
 		It("returns an error containing the status code", func() {
 			Expect(errAction).To(MatchError(notifier.ErrFailedToSendEmail))
 		})

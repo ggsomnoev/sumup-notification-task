@@ -9,6 +9,9 @@ import (
 	openapi "github.com/twilio/twilio-go/rest/api/v2010"
 )
 
+// Change with your twilio generated phone number.
+const twilioPhoneNumber = ""
+
 type TwilioSmsNotifier struct {
 	twilioClient *twilio.RestClient
 }
@@ -26,11 +29,11 @@ func (es *TwilioSmsNotifier) Send(n model.Notification) error {
 
 	params := &openapi.CreateMessageParams{}
 	params.SetTo(n.Recipient)
-	params.SetFrom(n.From)
+	params.SetFrom(twilioPhoneNumber)
 	params.SetBody(n.Message)
 
-	// TODO: check the returned resp.
-	// Does not work with PH phone numbers.
+	// TODO: check the resp.
+	// Does not work with PH or BG phone numbers.
 	_, err := es.twilioClient.Api.CreateMessage(params)
 	if err != nil {
 		return fmt.Errorf("failed to send SMS to %s: %v", n.Recipient, err)

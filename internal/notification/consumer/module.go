@@ -25,14 +25,16 @@ func Process(
 	consumer Consumer,
 	smsClient notifier.TextbeltClient,
 	mailClient notifier.SendGridClient,
+	slackWebHookURL string,
+	senderIdenitityEmail string,
 ) {
 	procSpawnFn(func(ctx context.Context) error {
 		store := store.NewStore(pool)
 
-		senders := map[string]service.Notifier{
-			"email": notifier.NewEmailNotifier(mailClient),
+		senders := map[model.ChannelType]service.Notifier{
+			"email": notifier.NewEmailNotifier(mailClient, senderIdenitityEmail),
 			"sms":   notifier.NewSmsNotifier(smsClient),
-			"slack": notifier.NewSlackNotifier(),
+			"slack": notifier.NewSlackNotifier(slackWebHookURL),
 		}
 
 		notificationSvc := service.NewService(store, senders)

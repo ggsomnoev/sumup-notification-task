@@ -34,6 +34,7 @@ func (s *Store) AddMessage(ctx context.Context, m model.Message) error {
 		VALUES ($1, $2, $3)
 		ON CONFLICT (uuid) DO NOTHING
 	`, NotificationEventsTable)
+
 	_, err = tx.Exec(ctx, query, m.UUID, m, time.Now().UTC())
 	return err
 }

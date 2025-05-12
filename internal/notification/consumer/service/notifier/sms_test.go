@@ -33,7 +33,6 @@ var _ = Describe("SmsNotifier", func() {
 		testNotif = model.Notification{
 			Channel:   "sms",
 			Recipient: "+359888123456",
-			From:      "+359899000000",
 			Subject:   "",
 			Message:   "Test SMS",
 		}

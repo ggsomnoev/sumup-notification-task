@@ -17,17 +17,19 @@ type SendGridClient interface {
 }
 
 type EmailNotifier struct {
-	client SendGridClient
+	client         SendGridClient
+	senderIdentity string
 }
 
-func NewEmailNotifier(client SendGridClient) *EmailNotifier {
+func NewEmailNotifier(client SendGridClient, senderIdenitity string) *EmailNotifier {
 	return &EmailNotifier{
-		client: client,
+		client:         client,
+		senderIdentity: senderIdenitity,
 	}
 }
 
 func (es *EmailNotifier) Send(n model.Notification) error {
-	from := mail.NewEmail("Notifier", n.From)
+	from := mail.NewEmail("Notifier", es.senderIdentity)
 	to := mail.NewEmail("Recipient", n.Recipient)
 	message := mail.NewSingleEmail(from, n.Subject, to, n.Message, n.Message)
 

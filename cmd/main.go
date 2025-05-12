@@ -35,7 +35,11 @@ type Config struct {
 
 	TwilioAccountSSID string `env:"TWILIO_ACC_SSID"`
 	TwilioAuthToken   string `env:"TWILIO_AUTH_TOKEN"`
-	TwilioMailAPIKey  string `env:"TWILIO_MAIL_API_KEY"`
+
+	SendGridAPIKey              string `env:"SEND_GRID_API_KEY,required"`
+	SendGridSenderIdentityEmail string `env:"SEND_GRID_SENDER_IDENTITY_EMAIL,required"`
+
+	SlackWebhookURL string `env:"SLACK_WEBHOOK_URL,required"`
 }
 
 func main() {
@@ -82,6 +86,7 @@ func main() {
 	srv := webapi.NewServer(appCtx)
 	producer.Process(procSpawnFn, appCtx, srv, rmqClient)
 
+	// Does not support PH or BG phone numbers. Easy to implement, but expensive.
 	// twilioSMSClient := twilio.NewRestClientWithParams(twilio.ClientParams{
 	// 	Username: cfg.TwilioAccountSSID,
 	// 	Password: cfg.TwilioAuthToken,
@@ -92,9 +97,18 @@ func main() {
 		textbelt.WithTimeout(texterTimeout),
 	)
 
-	twilioMailClient := sendgrid.NewSendClient(cfg.TwilioMailAPIKey)
+	mailClient := sendgrid.NewSendClient(cfg.SendGridAPIKey)
 
-	consumer.Process(procSpawnFn, appCtx, pool, rmqClient, textBeltSMSClient, twilioMailClient)
+	consumer.Process(
+		procSpawnFn,
+		appCtx,
+		pool,
+		rmqClient,
+		textBeltSMSClient,
+		mailClient,
+		cfg.SlackWebhookURL,
+		cfg.SendGridSenderIdentityEmail,
+	)
 
 	webapi.Start(procSpawnFn, srv, cfg.APIPort)
 

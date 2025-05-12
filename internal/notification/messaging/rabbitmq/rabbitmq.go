@@ -4,11 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/ggsomnoev/sumup-notification-task/internal/logger"
 	"github.com/ggsomnoev/sumup-notification-task/internal/notification/model"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
+
+const maxMessageRetries = 3
 
 type Client struct {
 	conn    *amqp.Connection
@@ -22,16 +25,33 @@ func NewClient(conn *amqp.Connection, queueName string) (*Client, error) {
 		return nil, fmt.Errorf("failed to open channel: %w", err)
 	}
 
+	deadLetterQueueName := fmt.Sprintf("%s.dlq", queueName)
+
 	_, err = ch.QueueDeclare(
 		queueName,
 		true,  // durable
 		false, // auto-delete
 		false, // exclusive
 		false, // no-wait
-		nil,   // args
+		amqp.Table{
+			"x-dead-letter-exchange":    "",
+			"x-dead-letter-routing-key": deadLetterQueueName,
+		},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to declare queue: %w", err)
+	}
+
+	_, err = ch.QueueDeclare(
+		deadLetterQueueName,
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to declare DLQ: %w", err)
 	}
 
 	return &Client{
@@ -91,18 +111,36 @@ func (c *Client) Consume(ctx context.Context, cb func(ctx context.Context, n mod
 			var m model.Message
 			if err := json.Unmarshal(msg.Body, &m); err != nil {
 				logger.GetLogger().Errorf("invalid message: %v", err)
-				_ = msg.Nack(false, false) // discard bad message
+				// Malformed messages are discarded to DLQ.
+				if err := msg.Nack(false, false); err != nil {
+					logger.GetLogger().Errorf("failed to ack message: %v", err)
+				}
 				continue
 			}
 
-			if err := cb(ctx, m); err != nil {
-				logger.GetLogger().Errorf("cb failed: %v", err)
-				_ = msg.Nack(false, true) // requeue
-				continue
-			}
+			retries := 0
+			for retries < maxMessageRetries {
+				if err := cb(ctx, m); err != nil {
+					retries++
+					logger.GetLogger().Errorf("cb failed (attempt %d/%d): %v", retries, maxMessageRetries, err)
+					if retries == maxMessageRetries {
+						logger.GetLogger().Errorf("max retries reached, discarding message")
+						// Discarded to DLQ.
+						if err := msg.Nack(false, false); err != nil {
+							logger.GetLogger().Errorf("failed to nack message: %v", err)
+						}
+						break
+					}
 
-			if err := msg.Ack(false); err != nil {
-				logger.GetLogger().Errorf("failed to ack message: %v", err)
+					delay := time.Duration(retries) * 2 * time.Second
+					time.Sleep(delay)
+					continue
+				}
+
+				if err := msg.Ack(false); err != nil {
+					logger.GetLogger().Errorf("failed to ack message: %v", err)
+				}
+				break
 			}
 		}
 	}

@@ -28,15 +28,14 @@ var _ = Describe("Service", func() {
 		fakeStore = &servicefakes.FakeStore{}
 		fakeNotifier = &servicefakes.FakeNotifier{}
 
-		svc = service.NewService(fakeStore, map[string]service.Notifier{
+		svc = service.NewService(fakeStore, map[model.ChannelType]service.Notifier{
 			"email": fakeNotifier,
 		})
 
 		msg = model.Message{
 			UUID: uuid.New(),
 			Notification: model.Notification{
-				From:      "sender@example.com",
-				Channel:   "email",
+				Channel:   model.ChannelEmail,
 				Recipient: "test@example.com",
 				Subject:   "Test",
 				Message:   "Hello!",
@@ -83,7 +82,7 @@ var _ = Describe("Service", func() {
 
 	Context("and no notifier is passed", func() {
 		BeforeEach(func() {
-			svc = service.NewService(fakeStore, map[string]service.Notifier{}) // no notifiers
+			svc = service.NewService(fakeStore, map[model.ChannelType]service.Notifier{}) // no notifiers
 		})
 
 		It("returns an error", func() {

@@ -24,12 +24,12 @@ type Notifier interface {
 
 type Service struct {
 	store     Store
-	notifiers map[string]Notifier
+	notifiers map[model.ChannelType]Notifier
 }
 
 func NewService(
 	store Store,
-	notifiers map[string]Notifier,
+	notifiers map[model.ChannelType]Notifier,
 ) *Service {
 	return &Service{
 		store:     store,
@@ -53,14 +53,15 @@ func (s *Service) Send(ctx context.Context, message model.Message) error {
 			return nil
 		}
 
-		logger.GetLogger().Infof("Sending notification via %s to %s", message.Channel, message.Recipient)
 		if err := s.store.AddMessage(ctx, message); err != nil {
 			return fmt.Errorf("failed to persist notification event: %w", err)
 		}
 
+		logger.GetLogger().Infof("Trying to send notification via %s...", message.Channel)
 		if err := notifier.Send(message.Notification); err != nil {
 			return fmt.Errorf("sending notification failed: %w", err)
 		}
+		logger.GetLogger().Info("Message send successfully!")
 
 		if err := s.store.MarkCompleted(ctx, message.UUID); err != nil {
 			return fmt.Errorf("failed to mark event as completed: %w", err)

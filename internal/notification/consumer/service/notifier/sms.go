@@ -38,7 +38,7 @@ func (sn *SmsNotifier) Send(n model.Notification) error {
 		return nil
 	}
 
-	msg, err := sn.client.Send(n.From, n.Message)
+	msg, err := sn.client.Send(n.Recipient, n.Message)
 	if err != nil {
 		return fmt.Errorf("failed to send message: %w", err)
 	}
@@ -50,6 +50,8 @@ func (sn *SmsNotifier) Send(n model.Notification) error {
 	if status == textbelt.StatusFailed {
 		return fmt.Errorf("%w (status - %s): %w", ErrFailedToSendSMS, status, err)
 	}
+
+	logger.GetLogger().Infof("Message %s with status %s is send!", msg, status)
 
 	return nil
 }

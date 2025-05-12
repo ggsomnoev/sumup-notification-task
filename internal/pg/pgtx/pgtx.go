@@ -32,11 +32,11 @@ func Atomically(
 
 	ctxWithTx := txctx.WithTx(ctx, tx)
 
-	if err := cb(ctxWithTx, tx); err != nil {
+	if err = cb(ctxWithTx, tx); err != nil {
 		return fmt.Errorf("tx callback failed: %w", err)
 	}
 
-	if err := tx.Commit(ctx); err != nil {
+	if err = tx.Commit(ctx); err != nil {
 		return fmt.Errorf("commit failed: %w", err)
 	}
 
