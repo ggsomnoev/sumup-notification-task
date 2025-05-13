@@ -6,18 +6,17 @@ ENV CGO_ENABLED=0 \
 WORKDIR /build
 
 COPY go.mod go.sum ./
-
 COPY vendor ./vendor
 ENV GOFLAGS=-mod=vendor
 
 COPY internal ./internal
-COPY cmd ./cmd
+COPY cmd/producer ./cmd/producer
 
-RUN go build -o main ./cmd
+RUN go build -o producer ./cmd/producer
 
 FROM alpine:latest
 
 WORKDIR /app
-COPY --from=builder /build/main .
+COPY --from=builder /build/producer .
 
-CMD ["./main"]
+CMD ["./producer"]

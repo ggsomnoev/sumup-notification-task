@@ -8,16 +8,12 @@ import (
 	"github.com/ggsomnoev/sumup-notification-task/internal/lifecycle"
 	"github.com/ggsomnoev/sumup-notification-task/internal/notification/consumer"
 	"github.com/ggsomnoev/sumup-notification-task/internal/notification/messaging/rabbitmq"
-	"github.com/ggsomnoev/sumup-notification-task/internal/notification/producer"
 	"github.com/ggsomnoev/sumup-notification-task/internal/pg"
-	"github.com/ggsomnoev/sumup-notification-task/internal/webapi"
 	"github.com/sendgrid/sendgrid-go"
 
 	// "github.com/twilio/twilio-go"
 	"github.com/lateralusd/textbelt"
 )
-
-var texterTimeout = 2 * time.Second
 
 func main() {
 	appController := lifecycle.NewController()
@@ -25,7 +21,7 @@ func main() {
 
 	cfg, err := config.Load()
 	if err != nil {
-		panic(fmt.Errorf("failed reading configuration, exiting - %w", err))
+		panic(fmt.Errorf("failed reading configuration: %w", err))
 	}
 
 	dbCfg := pg.PoolConfig{
@@ -35,12 +31,10 @@ func main() {
 		MaxConnIdleTime:   cfg.DBMaxConnIdleTime,
 		HealthCheckPeriod: cfg.DBHealthCheck,
 	}
-
 	pool, err := pg.InitPool(appCtx, cfg.DBConnectionURL, dbCfg)
 	if err != nil {
-		panic(fmt.Errorf("failed initializing db connection pool, exiting - %w", err))
+		panic(fmt.Errorf("failed initializing DB pool: %w", err))
 	}
-
 	defer pool.Close()
 
 	var tlsConfig *rabbitmq.TLSConfig
@@ -53,11 +47,8 @@ func main() {
 	}
 	rmqClient, err := rabbitmq.NewClient(cfg.RabbitMQConnURL, cfg.RabbitMQQueue, tlsConfig)
 	if err != nil {
-		panic(fmt.Errorf("failed to initially connect to Rabbitmq, exiting - %w", err))
+		panic(fmt.Errorf("failed to connect to RabbitMQ: %w", err))
 	}
-
-	srv := webapi.NewServer(appCtx)
-	producer.Process(procSpawnFn, appCtx, srv, rmqClient)
 
 	// Does not support PH or BG phone numbers. Easy to implement, but expensive.
 	// twilioSMSClient := twilio.NewRestClientWithParams(twilio.ClientParams{
@@ -67,7 +58,7 @@ func main() {
 
 	textBeltSMSClient := textbelt.New(
 		textbelt.WithKey("textbelt"),
-		textbelt.WithTimeout(texterTimeout),
+		textbelt.WithTimeout(2*time.Second),
 	)
 
 	mailClient := sendgrid.NewSendClient(cfg.SendGridAPIKey)
@@ -82,8 +73,6 @@ func main() {
 		cfg.SlackWebhookURL,
 		cfg.SendGridSenderIdentityEmail,
 	)
-
-	webapi.Start(procSpawnFn, srv, cfg.APIPort)
 
 	appController.Wait()
 }
