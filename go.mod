@@ -8,6 +8,7 @@ require (
 	github.com/caarlos0/env/v6 v6.10.1
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.4
+	github.com/joho/godotenv v1.5.1
 	github.com/labstack/echo/v4 v4.13.3
 	github.com/lateralusd/textbelt v0.0.0-20220127085055-d88c3b487f61
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.11.2

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/caarlos0/env/v6"
+	"github.com/ggsomnoev/sumup-notification-task/internal/config"
 	"github.com/ggsomnoev/sumup-notification-task/internal/lifecycle"
 	"github.com/ggsomnoev/sumup-notification-task/internal/notification/consumer"
 	"github.com/ggsomnoev/sumup-notification-task/internal/notification/messaging/rabbitmq"
@@ -19,39 +19,12 @@ import (
 
 var texterTimeout = 2 * time.Second
 
-type Config struct {
-	AppEnv string `env:"APP_ENV" envDefault:"local"`
-
-	APIPort string `env:"API_PORT" envDefault:"8080"`
-
-	DBConnectionURL   string        `env:"DB_CONNECTION_URL" envDefault:"postgres://notfuser:notfpass@notificationdb:5432/notificationdb"`
-	DBMaxConnLifetime time.Duration `env:"DB_MAX_CONN_LIFETIME" envDefault:"30m"`
-	DBMaxConnIdleTime time.Duration `env:"DB_MAX_CONN_IDLE_TIME" envDefault:"5m"`
-	DBHealthCheck     time.Duration `env:"DB_HEALTH_CHECK_PERIOD" envDefault:"1m"`
-	DBMinConns        int32         `env:"DB_MIN_CONNS" envDefault:"1"`
-	DBMaxConns        int32         `env:"DB_MAX_CONNS" envDefault:"2"`
-
-	RabbitMQConnURL  string `env:"RABBITMQ_CONN_URL" envDefault:"amqp://guest:guest@rabbitmq:5672/"`
-	RabbitMQQueue    string `env:"RABBITMQ_QUEUE" envDefault:"notifications_queue"`
-	RabbitMQCAFile   string `env:"RABBITMQ_CA_FILE" envDefault:"/etc/rabbitmq/ca-cert.pem"`
-	RabbitMQCertFile string `env:"RABBITMQ_CERT_FILE" envDefault:"/etc/rabbitmq/client-cert.pem"`
-	RabbitMQKeyFile  string `env:"RABBITMQ_KEY_FILE" envDefault:"/etc/rabbitmq/client-key.pem"`
-
-	TwilioAccountSSID string `env:"TWILIO_ACC_SSID"`
-	TwilioAuthToken   string `env:"TWILIO_AUTH_TOKEN"`
-
-	SendGridAPIKey              string `env:"SEND_GRID_API_KEY,required"`
-	SendGridSenderIdentityEmail string `env:"SEND_GRID_SENDER_IDENTITY_EMAIL,required"`
-
-	SlackWebhookURL string `env:"SLACK_WEBHOOK_URL,required"`
-}
-
 func main() {
 	appController := lifecycle.NewController()
 	appCtx, procSpawnFn := appController.Start()
 
-	cfg := Config{}
-	if err := env.Parse(&cfg); err != nil {
+	cfg, err := config.Load()
+	if err != nil {
 		panic(fmt.Errorf("failed reading configuration, exiting - %w", err))
 	}
 

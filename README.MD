@@ -107,6 +107,55 @@ curl -X POST http://127.0.0.1:8080/notify \
       }'
 ```
 
+## Environment Variables Setup Guide
+
+### SendGrid Configuration
+
+To enable email delivery via SendGrid, set the following environment variables in your `.env` file:
+
+- `SENDGRID_API_KEY`
+- `SENDGRID_SENDER_IDENTITY_EMAIL`
+
+#### Steps to generate:
+
+1. Create a SendGrid Account  
+   Sign up at [https://sendgrid.com](https://sendgrid.com).
+
+2. Generate an API Key
+   - Navigate to **Settings > API Keys**
+   - Click **Create API Key**
+   - Provide a name and choose appropriate access (e.g., "Full Access", etc.)
+   - Copy the generated API key and assign it to `SENDGRID_API_KEY`
+
+3. Verify a Sender Identity
+   - Go to **Email API > Sender Authentication**
+   - Select **Single Sender Verification**
+   - Add your email address and complete the verification process
+   - Use the verified email as `SENDGRID_SENDER_IDENTITY_EMAIL`
+
+
+### Slack Webhook Configuration
+
+To send notifications to Slack, set the following environment variable:
+
+- `SLACK_WEBHOOK_URL`
+
+#### Steps to generate:
+
+1. Create a Slack App
+   - Visit [https://api.slack.com/apps](https://api.slack.com/apps)
+   - Click **Create New App**
+
+2. Enable Incoming Webhooks
+   - Inside your app, go to **Incoming Webhooks**
+   - Toggle to **Enable Incoming Webhooks**
+
+3. Create a Webhook
+   - Click **Add New Webhook to Workspace**
+   - Select the desired channel to post messages to
+   - Copy the generated Webhook URL and set it as `SLACK_WEBHOOK_URL`
+
+
 ## Future work:
 * CI/CD & Terraform for cloud deployment.
 * Prometheus metrics (/metrics) & OpenTelemetry tracing.
@@ -114,6 +163,7 @@ curl -X POST http://127.0.0.1:8080/notify \
 * Retry / back-off strategy per messaging provider.
 * Rate-limit outbound provider calls.
 * Proper storage of secrets (Vault, k8s secrets, etc.)
-* more...
+* more tests...
 
 Enjoy exploring the notification app, feedback and questions are welcome!
+
