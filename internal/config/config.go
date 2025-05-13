@@ -52,8 +52,8 @@ func Load() (*Config, error) {
 		RabbitMQKeyFile:             getEnv("RABBITMQ_KEY_FILE", ""),
 		TwilioAccountSSID:           getEnv("TWILIO_ACCOUNT_SSID", ""),
 		TwilioAuthToken:             getEnv("TWILIO_AUTH_TOKEN", ""),
-		SendGridAPIKey:              getEnv("SENDGRID_API_KEY", ""),
-		SendGridSenderIdentityEmail: getEnv("SENDGRID_SENDER_IDENTITY_EMAIL", ""),
+		SendGridAPIKey:              getEnv("SEND_GRID_API_KEY", ""),
+		SendGridSenderIdentityEmail: getEnv("SEND_GRID_SENDER_IDENTITY_EMAIL", ""),
 		SlackWebhookURL:             getEnv("SLACK_WEBHOOK_URL", ""),
 	}, nil
 }
