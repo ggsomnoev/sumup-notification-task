@@ -12,9 +12,15 @@ tidy:
 vendor:
 	go mod vendor
 
-.PHONY: run
-run:
-	go run .\cmd\main.go
+# Add to your hostfile the docker container names
+.PHONY: run-consumer
+run-consumer:
+	go run ./cmd/consumer/main.go
+
+# Add to your hostfile the docker container names
+.PHONY: run-producer
+run-producer:
+	go run ./cmd/producer/main.go
 
 .PHONY: run-docker
 run-docker:
