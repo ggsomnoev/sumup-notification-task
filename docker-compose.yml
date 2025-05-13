@@ -12,8 +12,21 @@ services:
     env_file:
       - .env
 
-  consumer:
-    container_name: notification-consumer
+  consumer1:
+    container_name: notification-consumer-1
+    build:
+      context: .
+      dockerfile: Dockerfile.consumer
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      notificationdb:
+        condition: service_healthy
+    env_file:
+      - .env
+
+  consumer2:
+    container_name: notification-consumer-2
     build:
       context: .
       dockerfile: Dockerfile.consumer
