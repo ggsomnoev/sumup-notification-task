@@ -3,3 +3,5 @@
 /vendor/
 
 .env
+
+/helm/notification/templates/secrets.yaml

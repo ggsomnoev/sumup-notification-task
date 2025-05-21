@@ -12,11 +12,14 @@ ENV GOFLAGS=-mod=vendor
 COPY internal ./internal
 COPY cmd/consumer ./cmd/consumer
 
+COPY migrations ./migrations
+
 RUN go build -o consumer ./cmd/consumer
 
 FROM alpine:latest
 
 WORKDIR /app
 COPY --from=builder /build/consumer .
+COPY --from=builder /build/migrations ./migrations
 
 CMD ["./consumer"]

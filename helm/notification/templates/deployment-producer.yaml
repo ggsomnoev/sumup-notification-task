@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: producer
+spec:
+  replicas: {{ .Values.producer.replicaCount }}
+  selector:
+    matchLabels:
+      app: producer
+  template:
+    metadata:
+      labels:
+        app: producer
+    spec:
+      containers:
+        - name: producer
+          image: "{{ .Values.producer.image.repository }}:{{ .Values.producer.image.tag }}"
+          imagePullPolicy: {{ .Values.producer.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.producer.env.apiPort | int }}
+          env:
+            - name: APP_ENV
+              value: "{{ .Values.producer.env.appEnv }}"
+            - name: API_PORT
+              value: "{{ .Values.producer.env.apiPort }}"
+            - name: RABBITMQ_QUEUE
+              value: "{{ .Values.producer.env.rabbitmqQueue }}"
+            - name: RABBITMQ_CONN_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.name }}
+                  key: rabbitmq-conn-url

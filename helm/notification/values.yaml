@@ -1,0 +1,47 @@
+producer:
+  replicaCount: 1
+
+  image:
+    repository: georgisomnoev/notifier-producer
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  env:
+    appEnv: "local"
+    apiPort: "8080"
+    rabbitmqQueue: "notifications_queue"
+    rabbitmqURL: "amqp://user:supersecret@notification-rabbitmq:5672/"
+
+consumer:
+  replicaCount: 1
+
+  image:
+    repository: georgisomnoev/notifier-consumer
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  env:
+    appEnv: "local"
+    rabbitmqQueue: "notifications_queue"
+
+secrets:
+  name: "notification-secrets"
+
+rabbitmq:
+  auth:
+    existingPasswordSecret: "notification-secrets"
+    existingSecretPasswordKey: "rabbitmq-password"
+
+postgresql:
+  auth:
+    existingSecret: "notification-secrets"
+    username: user
+    database: notifications_db
+    secretKeys:
+      userPasswordKey: postgre-password
+
+migrate:
+  image:
+    repository: migrate/migrate
+    tag: v4.17.1
+    pullPolicy: IfNotPresent
