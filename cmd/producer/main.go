@@ -4,6 +4,9 @@ import (
 	"fmt"
 
 	"github.com/ggsomnoev/sumup-notification-task/internal/config"
+	"github.com/ggsomnoev/sumup-notification-task/internal/healthcheck"
+	"github.com/ggsomnoev/sumup-notification-task/internal/healthcheck/service"
+	"github.com/ggsomnoev/sumup-notification-task/internal/healthcheck/service/component"
 	"github.com/ggsomnoev/sumup-notification-task/internal/lifecycle"
 	"github.com/ggsomnoev/sumup-notification-task/internal/notification/messaging/rabbitmq"
 	"github.com/ggsomnoev/sumup-notification-task/internal/notification/producer"
@@ -35,6 +38,12 @@ func main() {
 	}
 
 	producer.Process(procSpawnFn, appCtx, srv, rmqClient)
+
+	rmqConn := component.NewRabbitMQChecker(rmqClient.Connection())
+	healthCheckService := service.NewHealthCheckService(rmqConn)
+
+	healthcheck.Process(procSpawnFn, appCtx, srv, healthCheckService)
+
 	webapi.Start(procSpawnFn, srv, cfg.APIPort)
 
 	appController.Wait()

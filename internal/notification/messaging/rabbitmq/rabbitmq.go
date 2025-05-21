@@ -137,6 +137,12 @@ func (c *Client) setupTLSConfig() (*tls.Config, error) {
 	return tlsConfig, nil
 }
 
+func (c *Client) Connection() *amqp.Connection {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	return c.conn
+}
+
 func (c *Client) Publish(ctx context.Context, message model.Message) error {
 	msg, err := json.Marshal(message)
 	if err != nil {
